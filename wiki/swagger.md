@@ -26,6 +26,8 @@ Actions:
 
    Replace the placeholder [`<lms-api-base-url>`](./lms-api.md#lms-api-base-url-placeholder).
 
+   You should see the `Swagger UI` with all endpoints listed.
+
 ## Authorize in `Swagger UI`
 
 If the API requires authentication:
