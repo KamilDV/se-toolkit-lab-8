@@ -19,6 +19,9 @@
     handle_path /utils/qwen-code-api* {
         reverse_proxy {$QWEN_CODE_API_URL}
     }
+    handle_path /utils/pgadmin* {
+        reverse_proxy http://pgadmin:{$CONST_PGADMIN_CONTAINER_PORT}
+    }
     handle /docs* {
         reverse_proxy http://app:{$APP_CONTAINER_PORT}
     }
