@@ -51,20 +51,20 @@ A senior engineer explains the assignment:
 
 ## Required tasks
 
-### Task 1 — Add Structured Logging and Observability MCP Tools
+### Task 1 — Add Structured Logging and Explore Traces
 
 **Purpose:**
 
 Structured logs with consistent fields turn free-text search into precise, filterable queries.
-Connecting the AI agent to VictoriaLogs and VictoriaTraces lets users ask about errors, request flow, and system health in natural language instead of writing queries by hand.
+Traces show how a single request flows across services.
+Understanding both data sources directly is a prerequisite for wiring them into the AI agent.
 
 **Summary:**
 
-#### Part A — Structured logging
+#### Part A — Add structured logging
 
-Students start by opening the VictoriaLogs web UI (vmui) and looking at the current logs.
-They see unstructured text: Uvicorn startup messages, raw request lines, Python tracebacks.
-They try to query for "all errors from the backend" and discover that without structured fields, this requires fragile text matching.
+Students run `docker compose logs backend` and see unstructured text: Uvicorn startup messages, raw request lines, Python tracebacks.
+They try to find "all errors from the backend" in this output and discover it requires fragile text matching.
 
 Students then configure structured JSON logging across the backend and nanobot services.
 They set up a JSON log formatter (via Python's logging or a library like `structlog`) so every entry has consistent fields: `level`, `event`, and `service`.
@@ -101,9 +101,45 @@ The task specifies the expected log sequence for two scenarios: a successful req
 Students also add an `auth_failure` event (with `level: "warning"`) for requests with an invalid API key.
 
 Students figure out where in the code each log statement belongs — in the webchat channel (`nanobot_webchat`), the MCP tool server (`lms_mcp`), and the backend (middleware, routes, DB layer).
-After redeploying, they trigger both scenarios and verify the full sequences appear in VictoriaLogs.
+After redeploying, they trigger both scenarios and verify the full sequences appear in `docker compose logs`.
 
-#### Part B — Log query tools
+#### Part B — Explore logs in VictoriaLogs
+
+Students open the VictoriaLogs web UI (vmui) and discover that the same structured logs are queryable with LogsQL — filtering by `service`, `level`, `event`, and time range.
+They run the same queries they struggled with in Part A and see how structured fields make them trivial.
+
+Students also use provided `poe` tasks to query VictoriaLogs from the terminal — e.g., `uv run poe logs-search "error"` to search by keyword and `uv run poe logs-count` to count errors per service over a time window.
+
+#### Part C — Explore traces in VictoriaTraces
+
+Students open the VictoriaTraces UI and trigger a request through the Flutter web app.
+They find the resulting trace, inspect the span hierarchy, and identify which service each span belongs to.
+They then trigger a failure (e.g., stop PostgreSQL) and compare the healthy and error traces — noting where the error appears and how the trace duration changes.
+
+Students also use provided `poe` tasks to query the VictoriaTraces HTTP API (Jaeger-compatible endpoints) — e.g., `uv run poe traces-list` to list recent traces for a service and `uv run poe trace-get <trace-id>` to fetch a specific trace by ID.
+
+**Acceptance criteria:**
+
+- Both services emit JSON-structured log entries with at least `level`, `event`, and `service` fields.
+- A successful request produces the happy-path log sequence, visible in `docker compose logs`.
+- A failed request (database down) produces the error-path log sequence, with `level: "error"` on the DB query event.
+- A request with an invalid API key produces an `auth_failure` event with `level: "warning"`.
+- The student can query structured logs in VictoriaLogs by `service`, `level`, and `event` fields.
+- The student can use `poe` tasks to search logs and count errors from the terminal.
+- The student can find a trace in the VictoriaTraces UI and identify the span hierarchy for a cross-service request.
+- The student can use `poe` tasks to list recent traces and fetch a trace by ID.
+
+---
+
+### Task 2 — Add Observability MCP Tools to the Nanobot Agent
+
+**Purpose:**
+
+Connecting the AI agent to VictoriaLogs and VictoriaTraces lets users ask about errors, request flow, and system health in natural language instead of writing queries by hand.
+
+**Summary:**
+
+#### Part A — Log query tools
 
 Students add MCP tools to the nanobot's MCP server that query the VictoriaLogs HTTP API.
 They implement at least two tools: one that searches logs by keyword and time range (returning recent matching entries), and one that counts errors per service over a time window (returning a summary).
@@ -112,7 +148,7 @@ Each tool constructs a LogsQL query, sends it to the VictoriaLogs query endpoint
 After redeploying the nanobot, students verify the tools work under both normal and failure conditions.
 They ask the agent about errors when the system is healthy (expecting "no errors found" or similar) and after triggering a failure (expecting a summary mentioning the affected service and error).
 
-#### Part C — Trace query tools
+#### Part B — Trace query tools
 
 Students implement at least two tools that query the VictoriaTraces HTTP API (Jaeger-compatible query endpoints): one that lists recent traces for a service (with duration and status), and one that fetches a specific trace by ID (returning the span hierarchy).
 Each tool queries the VictoriaTraces API, parses the response, and returns a structured summary.
@@ -122,10 +158,6 @@ They test fetching recent traces and looking up a specific trace by ID.
 
 **Acceptance criteria:**
 
-- Both services emit JSON-structured log entries with at least `level`, `event`, and `service` fields.
-- A successful request produces the happy-path log sequence, queryable in VictoriaLogs.
-- A failed request (database down) produces the error-path log sequence, with `level: "error"` on the DB query event.
-- A request with an invalid API key produces an `auth_failure` event with `level: "warning"`.
 - At least two MCP tools for querying VictoriaLogs are registered in the MCP server.
 - The agent answers "any errors in the last hour?" correctly under normal conditions.
 - The agent answers "any errors in the last hour?" correctly after a failure, mentioning the affected service.
@@ -136,7 +168,7 @@ They test fetching recent traces and looking up a specific trace by ID.
 
 ---
 
-### Task 2 — Write a Skill and Configure a Cron Health Check
+### Task 3 — Write a Skill and Configure a Cron Health Check
 
 **Purpose:**
 
