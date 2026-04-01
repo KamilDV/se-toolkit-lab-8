@@ -1,0 +1,53 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "./workspace",
+      "model": "coder-model",
+      "provider": "openai",
+      "maxTokens": 1024,
+      "contextWindowTokens": 8192,
+      "temperature": 0.7,
+      "maxToolIterations": 40,
+      "reasoningEffort": null,
+      "timezone": "UTC"
+    },
+    "openai": {
+      "apiKey": "",
+      "apiBase": ""
+    }
+  },
+  "channels": {
+    "sendProgress": true,
+    "sendToolHints": false,
+    "sendMaxRetries": 3,
+    "webchat": {
+      "enabled": true,
+      "allow_from": ["*"]
+    }
+  },
+  "providers": {
+    "openai": {
+      "apiKey": "",
+      "apiBase": ""
+    }
+  },
+  "tools": {
+    "mcpServers": {
+      "lms": {
+        "command": "python",
+        "args": ["-m", "mcp_lms", "http://backend:8000"],
+        "env": {
+          "NANOBOT_LMS_API_KEY": ""
+        }
+      },
+      "observability": {
+        "command": "python",
+        "args": ["-m", "mcp_observability"],
+        "env": {
+          "VICTORIALOGS_URL": "http://victorialogs:9428",
+          "VICTORIATRACES_URL": "http://victoriatraces:10428"
+        }
+      }
+    }
+  }
+}
